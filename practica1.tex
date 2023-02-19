@@ -22,21 +22,24 @@
     Aparecen 4x3 celdas, por tanto un total de 12 celdas o estados. \\
     El agente puede ejecutar 4 posibles acciones: mover arriba, derecha, abajo e izquierda.
 
-    \textbf{STUFF MISSING HERE}
+    Dado que se trata de un entorno con
     
-    \subsection{Abrir el fichero qlearningAgents.py y buscar la clase QLearningAgent. Describir los m´etodos que
+    \subsection{Abrir el fichero qlearningAgents.py y buscar la clase QLearningAgent. Describir los métodos que
     aparecen en ella.}
     
-    \textbf{readQtable:} HAHAHAHAHAHA \\
-    \textbf{writeQtable:} HAHAHAHAHAHA \\
-    \textbf{computePosition:} HAHAHAHAHAHA \\
-    \textbf{getQValue:} HAHAHAHAHAHA \\
-    \textbf{computeValueFromQValues:} HAHAHAHAHAHA \\
-    \textbf{computeActionFromQValues:} HAHAHAHAHAHA \\
-    \textbf{getAction:} HAHAHAHAHAHA \\
-    \textbf{update:} HAHAHAHAHAHA \\
-    \textbf{getPolicy:} HAHAHAHAHAHA \\
-    \textbf{getValue:} HAHAHAHAHAHA \\
+    \textbf{readQtable:} Este método lee la Qtable de la memoria no volátil del sistema que ha sido guardada por
+    writeQtable. \\
+    \textbf{writeQtable:} Escribe la Qtable a la memoria no volátil del sistema que se genera y(o actualiza en el
+    método update).  \\
+    \textbf{computePosition:} Este método devuelve la linea de la Qtable a la que corresponde una posición (o estado).\\
+    \textbf{getQValue:} Devuelve el Q value para un par estado acción almacenado en la Q table. \\
+    \textbf{computeValueFromQValues:} Devuelve la mayor Q para un estado determinador de la Q table. \\
+    \textbf{computeActionFromQValues:} Devuelve la mejor acción posible para un estado determinado basado en el Q
+    value. \\
+    \textbf{getAction:} Devuelve la mejor acción posible o una acción random dependiendo del valor epsilon. \\
+    \textbf{update:} Método que se llama para actualizar la Qtable después de una transición entre estados. \\
+    \textbf{getPolicy:}  Lo mismo que computeActionFromQValues. \\
+    \textbf{getValue:} Lo mismo que computeValueFromQValues. \\
 
     \subsection{Ejecuta ahora el agente anterior con:}
     \begin{verbatim}
@@ -44,8 +47,18 @@
     \end{verbatim}
     \subsection{¿Qué información se muestra en el laberinto? ¿Qué aparece por terminal cuando se realizan los
     movimientos en el laberinto?}
+    En cada celda aparecen 4 valores que indican el Q value de cada acción para dicho estado. En el caso de los dos
+    estados finales solo hay un valor que tenderá a la recompensa.
+
+    En el terminal aparece el estado, la acción que se toma, el estado en el que se acaba y la recompensa para dicha
+    transición.
     \subsection{¿Qué clase de movimiento realiza el agente anterior?}
+    El agente sigue un movimiento aleatorio.
     \subsection{¿Se pueden sacar varias políticas óptimas? Describe todas las políticas óptimas para este problema.}
+    En este problema existen varias políticas óptimas ya que el único refuerzo positivo se consigue en el estado
+    final y salvo una celda que tiene refuerzo negativo todas las demás tienen un refuerzo neutro.
+    Cualquier política que no lleve al agente al recuadro con recompensa negativa y su nodo final sea el de
+    recompensa será óptima.
     \subsection{Escribir el metodo update de la clase QLearningAgent utilizando las funciones de actualización del algoritmo
     Q-Learning. Para ello, inserta el código necesario allí donde aparezca la etiqueta INSERTA TU CODIGO
     AQUÍ siguiendo las instrucciones que se proporcionan, con el fin de conseguir el comportamiento deseado.}
@@ -55,17 +68,26 @@
     python gridworld.py -a q -k 100 -n 0
     \end{verbatim}
     \subsection*{¿Qué sucede?}
+    El valor epsilon, cuanto más alto, más movimiento aleatorio hace el agente en vez de la acción más indicada por
+    la política de ese momento. Dado que el valor es bajo el agente tiene a seguir el camino de acciones más óptimo
+    conocido y tiende a explorar menos.
+    Esto hace que el agente tenga un sesgo por el camino que ya conoce y le cueste más encontrar el otro camino óptimo.
     \subsection{Después de la ejecución anterior, abrir el fichero qtable.txt. ¿Qué contiene?}
-
+    Contiene la Q table de dicha ejecución donde hay 12 filas, una fila por cada estado. Además, tiene 5 columnas,
+    una por cada acción y la última indica el valor de reward de los valores terminales.
 
     \section*{Ejercicio 2}
-    En el ejercicio anterior, siempre que el agente decid´ıa moverse hacia una direcci´on se mov´ıa en esa direcci´on
-    con probabilidad 1. Es decir, se trataba de un MDP determinista. Ahora vamos a crear un MDP estoc´astico:
+    En el ejercicio anterior, siempre que el agente decidía moverse hacia una dirección se movía en esa dirección
+    con probabilidad 1. Es decir, se trataba de un MDP determinista. Ahora vamos a crear un MDP estocástico:
     \subsection{Ejecuta y juega un par de partidas con el agente manual:}
     \begin{verbatim}
     python gridworld.py -m -n 0.3
     \end{verbatim}
     \subsection*{¿Qué sucede? ¿Crees que el agente QLearningAgent seré capaz de aprender en este nuevo escenario?}
+    El agente no se mueve donde se le dice que se mueva, existe una posibilidad de que dicha acción no ocurra y otra
+    aleatoria ocurra.
+    Será capaz de aprender pero más lentamente ya que aunque quisiera hacer la política óptima a veces haría un paso
+    en la dirección incorrecta y no recibiría la recompensa que debería por hacer dicha acción.
     \subsection{Reiniciar los valores de la tabla Q del fichero qtable.txt. Para ello ejecutar desde el terminal:}
     \begin{verbatim}
     cp qtable.ini.txt qtable.txt
@@ -76,5 +98,8 @@
     \end{verbatim}
     \subsection{Tras unas cuantos episodios, ¿se genera la política óptima? Y si se genera, ¿se tarda más o menos
     que en el caso determinista?}
+    Se acaba generando la política óptima pero tarda mucho más por lo indicado en el punto anterior. Al tener un
+    comportamiento estocástico el agente no recibe las recompensas adecuadas para el par acción estado usado y eso
+    relentiza la convergencia.
 
 \end{document}

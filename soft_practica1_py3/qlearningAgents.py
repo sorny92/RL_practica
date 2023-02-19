@@ -28,7 +28,7 @@ class QLearningAgent(ReinforcementAgent):
         self.actions = {"north": 0, "east": 1, "south": 2, "west": 3, "exit": 4}
         self.table_file = open("qtable.txt", "r+")
         self.q_table = self.readQtable()
-        self.epsilon = 1
+        self.epsilon = 0.05
         self.discount = 0.9
 
     def readQtable(self):
@@ -141,16 +141,27 @@ class QLearningAgent(ReinforcementAgent):
         """
         ###########################	INSERTA TU CODIGO AQUI  ###################################################################
 
-    #
-    # INSTRUCCIONES:
-    #
-    # Vamos a implementar la funcion de actualizacion de Q-learning. Esta funcion tiene la siguiente forma dependiendo de si
-    # el estado al que transitamos es un estado terminal o no:
-    #
-    # En el caso de que el estado al que transitemos, nextState, no sea un estado terminal actualizamos siguiendo
-    # la siguiente regla:
-    #
-    #	Q(state,action) <- (1-self.alpha) * Q(state,action) + self.alpha * (reward + self.discount * max a' Q(nextState, a'))
+        #
+        # INSTRUCCIONES:
+        #
+        # Vamos a implementar la funcion de actualizacion de Q-learning. Esta funcion tiene la siguiente forma dependiendo de si
+        # el estado al que transitamos es un estado terminal o no:
+        #
+        # En el caso de que el estado al que transitemos, nextState, no sea un estado terminal actualizamos siguiendo
+        # la siguiente regla:
+        #
+        #	Q(state,action) <- (1-self.alpha) * Q(state,action) + self.alpha * (reward + self.discount * max a' Q(nextState, a'))
+        action_v = self.actions[action]
+        old_q_value = self.q_table[self.computePosition(state)][action_v]
+
+        if nextState == "TERMINAL_STATE":
+            self.q_table[self.computePosition(state)][action_v] = (1 - self.alpha) * old_q_value + \
+                                                                self.alpha * (reward)
+        else:
+            q_value_next_state = self.computeValueFromQValues(nextState)
+            self.q_table[self.computePosition(state)][action_v] = (1 - self.alpha) * old_q_value + \
+                                                                self.alpha * (reward + self.discount * q_value_next_state)
+
     #
     # Por el contrario, si nextState es un estado terminal:
     #
@@ -242,8 +253,8 @@ class ApproximateQAgent(PacmanQAgent):
         feats = self.featExtractor.getFeatures(state, action)
         for f in feats:
             self.weights[f] = self.weights[f] + self.alpha * feats[f] * ((
-                                                                                     reward + self.discount * self.computeValueFromQValues(
-                                                                                 nextState)) - self.getQValue(
+                                                                                 reward + self.discount * self.computeValueFromQValues(
+                                                                             nextState)) - self.getQValue(
                 state, action))
 
         # util.raiseNotDefined()
