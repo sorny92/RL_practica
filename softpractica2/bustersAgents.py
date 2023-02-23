@@ -229,6 +229,23 @@ class GreedyBustersAgent(BustersAgent):
 
 
 class RLAgent(BustersAgent):
+    actions = {
+        'North': 0,
+        'South': 1,
+        'East': 2,
+        'West': 3,
+        'Stop': 4
+    }
+    directions = {
+        'North': 0,
+        'South': 1,
+        'East': 2,
+        'West': 3,
+    }
+
+    def get_row_qtable(self, closest_ghost_direction, closest_ghost_action):
+
+        return self.actions[closest_ghost_action] * len(self.actions) + self.directions[closest_ghost_direction]
 
     def registerInitialState(self, gameState):
         BustersAgent.registerInitialState(self, gameState)
@@ -261,12 +278,17 @@ class RLAgent(BustersAgent):
         # self.gamma y self.epsilon.
         #
         ##########################################################################
-        self.nRowsQTable = 100
-        self.alpha = 0
-        self.gamma = 0
-        self.epsilon = 1
+        # n_g_direction, g_action
+        #  4values        5values
+        self.nRowsQTable = 4 * 5
+        # alpha    - learning rate
+        # epsilon  - exploration rate
+        # gamma    - discount factor
+        self.alpha = 0.5
+        self.gamma = 0.8
+        self.epsilon = 0.9
         ##########################################################################
-        self.nColumnsQTable = 4
+        self.nColumnsQTable = 5
 
         self.table_file = Path("qtable.txt")
         self.q_table = self.readQtable() or self.initQtable()
@@ -346,12 +368,38 @@ class RLAgent(BustersAgent):
             for line in self.q_table:
                 for item in line:
                     f.write(str(item) + " ")
-                    f.write("\n")
+                f.write("\n")
 
     def computePosition(self, state):
         """
         Compute the row of the qtable for a given state.
         """
+        gameState = state
+        pacman_position = gameState.getPacmanPosition()
+        closest_ghost_idx = 0
+        lowest = 1000000000000000000000
+        for idx, g in enumerate(gameState.data.ghostDistances):
+            if g is None or g > lowest:
+                continue
+            else:
+                lowest = g
+                closest_ghost_idx = idx
+        position_closest_ghost = gameState.getGhostPositions()[closest_ghost_idx]
+        action_closest_ghost = "Stop" #gameState.getGhostDirections()[closest_ghost_idx]
+        distance_v = (position_closest_ghost[0] - pacman_position[0], position_closest_ghost[1] - pacman_position[1])
+        if abs(distance_v[0]) > abs(distance_v[1]):
+            if distance_v[0] > 0:
+                ghost_drection = Directions.EAST
+            else:
+                ghost_drection = Directions.WEST
+        else:
+            if distance_v[1] > 0:
+                ghost_drection = Directions.NORTH
+            else:
+                ghost_drection = Directions.SOUTH
+
+        return self.get_row_qtable(ghost_drection, action_closest_ghost)
+
         ########################### INSERTA TU CODIGO AQUI  ######################
         #
         # INSTRUCCIONES:
@@ -456,6 +504,20 @@ class RLAgent(BustersAgent):
         #
         ##########################################################################
         reward = 0
+        # Stay still is bad? Not clear if this is a good policy
+        if state.data.agentStates[0].getDirection() == Directions.STOP:
+            reward += -1
+
+        # The closer to the closest ghost the better? Maybe it's good for the policy? But might get stuck in walls
+        pass
+
+        # If eats a ghost that's good
+        reward += 100 * (state.getNumAgents() - nextState.getNumAgents())
+
+        # If win the game many points
+        if nextState.isWin():
+            reward += 1000
+
         ##########################################################################
         return reward
 
@@ -466,25 +528,28 @@ class RLAgent(BustersAgent):
           You should do your Q-Value update here
         """
         print("Started in state:")
-        self.printInfo(state)
+        #self.printInfo(state)
         print("Took action: ", action)
         print("Ended in state:")
-        self.printInfo(nextState)
+        #self.printInfo(nextState)
         print("Got reward: ", reward)
         print("---------------------------------")
-        ########################### INSERTA TU CODIGO AQUI #######################
-        #
-        # INSTRUCCIONES:
-        #
-        # Debemos desarrollar este metodo siguiendo un esquema similar al de la practica 1. En este caso,
-        # para determinar si nextState es terminal o no, se puede utilizar la funcion nextState.isWin().
-        #
-        ##########################################################################
 
-        ##########################################################################
+        s_row = self.computePosition(state)
+        print("STATE ROW", s_row)
+        action_v = self.actions[action]
+        print(action_v, action)
+        old_q_value = self.q_table[s_row][action_v]
+        lr = (1 - self.alpha)
+
         if nextState.isWin():
+            self.q_table[s_row][action_v] = lr * old_q_value + (self.alpha * reward)
             # If a terminal state is reached
             self.writeQtable()
+        else:
+            q_value_next_state = self.computeValueFromQValues(nextState)
+            self.q_table[s_row][action_v] = lr * old_q_value + self.alpha * (
+                    reward + self.gamma * q_value_next_state)
 
     def getPolicy(self, state):
         "Return the best action in the qtable for a given state"
