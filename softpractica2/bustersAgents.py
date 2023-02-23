@@ -385,7 +385,10 @@ class RLAgent(BustersAgent):
                 lowest = g
                 closest_ghost_idx = idx
         position_closest_ghost = gameState.getGhostPositions()[closest_ghost_idx]
-        action_closest_ghost = "Stop" #gameState.getGhostDirections()[closest_ghost_idx]
+        if not len(gameState.getGhostDirections()):
+            action_closest_ghost = "Stop"
+        else:
+            action_closest_ghost = gameState.getGhostDirections()[closest_ghost_idx]
         distance_v = (position_closest_ghost[0] - pacman_position[0], position_closest_ghost[1] - pacman_position[1])
         if abs(distance_v[0]) > abs(distance_v[1]):
             if distance_v[0] > 0:
@@ -528,10 +531,10 @@ class RLAgent(BustersAgent):
           You should do your Q-Value update here
         """
         print("Started in state:")
-        #self.printInfo(state)
+        # self.printInfo(state)
         print("Took action: ", action)
         print("Ended in state:")
-        #self.printInfo(nextState)
+        # self.printInfo(nextState)
         print("Got reward: ", reward)
         print("---------------------------------")
 
