@@ -237,14 +237,18 @@ class RLAgent(BustersAgent):
         'Stop': 4
     }
     directions = {
-        'North': 0,
-        'South': 1,
-        'East': 2,
-        'West': 3,
+        'N': 0,
+        'NE': 1,
+        'E': 2,
+        'SE': 3,
+        'S': 4,
+        'SW': 5,
+        'W': 6,
+        'NW': 7,
     }
 
     def get_row_qtable(self, closest_ghost_direction, closest_ghost_action):
-
+        print(closest_ghost_direction, closest_ghost_action)
         return self.actions[closest_ghost_action] * len(self.actions) + self.directions[closest_ghost_direction]
 
     def registerInitialState(self, gameState):
@@ -280,13 +284,13 @@ class RLAgent(BustersAgent):
         ##########################################################################
         # n_g_direction, g_action
         #  4values        5values
-        self.nRowsQTable = 4 * 5
+        self.nRowsQTable = len(self.actions) * len(self.directions)
         # alpha    - learning rate
         # epsilon  - exploration rate
         # gamma    - discount factor
-        self.alpha = 0.5
-        self.gamma = 0.8
-        self.epsilon = 0.9
+        self.alpha = 0.8
+        self.gamma = 0.9
+        self.epsilon = 0.1
         ##########################################################################
         self.nColumnsQTable = 5
 
@@ -376,32 +380,62 @@ class RLAgent(BustersAgent):
         """
         gameState = state
         pacman_position = gameState.getPacmanPosition()
-        closest_ghost_idx = 0
-        lowest = 1000000000000000000000
-        for idx, g in enumerate(gameState.data.ghostDistances):
-            if g is None or g > lowest:
-                continue
-            else:
-                lowest = g
-                closest_ghost_idx = idx
+
+        def get_closest_ghost():
+            closest_ghost_idx = 0
+            lowest = 1000000000000000000000
+            for idx, g in enumerate(gameState.data.ghostDistances):
+                if g is None or g > lowest:
+                    continue
+                else:
+                    lowest = g
+                    closest_ghost_idx = idx
+            return closest_ghost_idx
+
+        closest_ghost_idx = get_closest_ghost()
         position_closest_ghost = gameState.getGhostPositions()[closest_ghost_idx]
         if not len(gameState.getGhostDirections()):
             action_closest_ghost = "Stop"
         else:
             action_closest_ghost = gameState.getGhostDirections()[closest_ghost_idx]
-        distance_v = (position_closest_ghost[0] - pacman_position[0], position_closest_ghost[1] - pacman_position[1])
-        if abs(distance_v[0]) > abs(distance_v[1]):
-            if distance_v[0] > 0:
-                ghost_drection = Directions.EAST
-            else:
-                ghost_drection = Directions.WEST
-        else:
-            if distance_v[1] > 0:
-                ghost_drection = Directions.NORTH
-            else:
-                ghost_drection = Directions.SOUTH
+        distance_v = (
+            position_closest_ghost[0] - pacman_position[0] + 0.0001, position_closest_ghost[1] - pacman_position[1])
+        angle = np.arctan(distance_v[1] / distance_v[0])
+        n_directions = 2
+        ghost_direction = round(2*angle * n_directions / np.pi)
+        print(pacman_position, position_closest_ghost, ghost_direction, angle)
+        if distance_v[1] >= 0 and distance_v[0] >= 0:
+            if ghost_direction == 0:
+                ghost_direction = "E"
+            elif ghost_direction == 1:
+                ghost_direction = "NE"
+            elif ghost_direction == 2:
+                ghost_direction = "N"
+        if distance_v[1] >= 0 and distance_v[0] < 0:
+            if ghost_direction == 2 or ghost_direction == -2:
+                ghost_direction = "N"
+            elif ghost_direction == -1:
+                ghost_direction = "NW"
+            elif ghost_direction == 0:
+                ghost_direction = "W"
+        if distance_v[1] < 0 and distance_v[0] >= 0:
+            if ghost_direction == 0:
+                ghost_direction = "E"
+            elif ghost_direction == -1:
+                ghost_direction = "SE"
+            elif ghost_direction == -2:
+                ghost_direction = "S"
+        if distance_v[1] < 0 and distance_v[0] < 0:
+            if ghost_direction == 2 or ghost_direction == -2:
+                ghost_direction = "S"
+            elif ghost_direction == 1:
+                ghost_direction = "SW"
+            elif ghost_direction == 0:
+                ghost_direction = "W"
 
-        return self.get_row_qtable(ghost_drection, action_closest_ghost)
+        print(ghost_direction)
+
+        return self.get_row_qtable(ghost_direction, action_closest_ghost)
 
         ########################### INSERTA TU CODIGO AQUI  ######################
         #
@@ -515,7 +549,7 @@ class RLAgent(BustersAgent):
         pass
 
         # If eats a ghost that's good
-        reward += 100 * (state.getNumAgents() - nextState.getNumAgents())
+        reward += 200 * (state.getNumAgents() - nextState.getNumAgents())
 
         # If win the game many points
         if nextState.isWin():
@@ -534,7 +568,7 @@ class RLAgent(BustersAgent):
         # self.printInfo(state)
         print("Took action: ", action)
         print("Ended in state:")
-        # self.printInfo(nextState)
+        self.printInfo(nextState)
         print("Got reward: ", reward)
         print("---------------------------------")
 
