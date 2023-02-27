@@ -184,6 +184,13 @@ class GameState:
     def getNumAgents(self):
         return len(self.data.agentStates)
 
+    def get_n_living_ghosts(self):
+        counter = 0
+        for g in self.livingGhosts:
+            if g:
+                counter += 1
+        return counter
+
     def getScore(self):
         return self.data.score
 

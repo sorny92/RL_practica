@@ -248,49 +248,21 @@ class RLAgent(BustersAgent):
     }
 
     def get_row_qtable(self, closest_ghost_direction, closest_ghost_action):
-        print(closest_ghost_direction, closest_ghost_action)
-        return self.actions[closest_ghost_action] * len(self.actions) + self.directions[closest_ghost_direction]
+        return self.directions[closest_ghost_direction]
 
     def registerInitialState(self, gameState):
         BustersAgent.registerInitialState(self, gameState)
         self.distancer = Distancer(gameState.data.layout, False)
-        ########################### INSERTA TU CODIGO AQUI  ######################
-        #
-        # INSTRUCCIONES:
-        #
-        # Dependiendo de las caracteristicas que hayamos seleccionado para representar los estados,
-        # tendremos un numero diferente de filas en nuestra tabla Q. Por ejemplo, imagina que hemos seleccionado
-        # como caracteristicas de estado la direccion en la que se encuentra el fantasma mas cercano con respecto
-        # a pacman, y si hay una pared en esa direccion. La primera caracteristica tiene 4 posibles valores: el
-        # fantasma esta encima de pacman, por debajo, a la izquierda o a la derecha. La segunda tiene solo dos: hay
-        # una pared en esa direccion o no. El numero de combinaciones posibles seria de 8 y por lo tanto tendriamos 8 estados:
-        #
-        # nearest_ghost_up, no_wall
-        # nearest_ghost_down, no_wall
-        # nearest_ghost_right, no_wall
-        # nearest_ghost_left, no_wall
-        # nearest_ghost_up, wall
-        # nearest_ghost_down, wall
-        # nearest_ghost_right, wall
-        # nearest_ghost_left, wall
-        #
-        # Entonces, en este caso, estableceriamos que self.nRowsQTable = 8. Este es simplemente un ejemplo,
-        # y es tarea del alumno seleccionar las caracteristicas que van a tener estos estados. Para ello, se puede utilizar
-        # la informacion que se imprime en printInfo. La idea es seleccionar unas caracteristicas que representen
-        # perfectamente en cada momento la situacion del juego, de forma que pacman pueda decidir que accion ejecutar
-        # a partir de esa informacion. Despues, hay que seleccionar unos valores adecuados para los parametros self.alpha,
-        # self.gamma y self.epsilon.
-        #
-        ##########################################################################
-        # n_g_direction, g_action
-        #  4values        5values
-        self.nRowsQTable = len(self.actions) * len(self.directions)
+
+        # n_g_direction
+        #  4values
+        self.nRowsQTable = len(self.directions)
         # alpha    - learning rate
         # epsilon  - exploration rate
         # gamma    - discount factor
-        self.alpha = 0.8
-        self.gamma = 0.9
-        self.epsilon = 0.1
+        self.alpha = 0.2
+        self.gamma = 0.8
+        self.epsilon = 0.2
         ##########################################################################
         self.nColumnsQTable = 5
 
@@ -360,7 +332,7 @@ class RLAgent(BustersAgent):
 
         q_table = []
 
-        for line in content.split('\n'):
+        for line in content.split('\n')[:-1]:
             values = [float(x) for x in line.split()]
             q_table.append(values)
 
@@ -383,7 +355,7 @@ class RLAgent(BustersAgent):
 
         def get_closest_ghost():
             closest_ghost_idx = 0
-            lowest = 1000000000000000000000
+            lowest = 1000
             for idx, g in enumerate(gameState.data.ghostDistances):
                 if g is None or g > lowest:
                     continue
@@ -402,8 +374,7 @@ class RLAgent(BustersAgent):
             position_closest_ghost[0] - pacman_position[0] + 0.0001, position_closest_ghost[1] - pacman_position[1])
         angle = np.arctan(distance_v[1] / distance_v[0])
         n_directions = 2
-        ghost_direction = round(2*angle * n_directions / np.pi)
-        print(pacman_position, position_closest_ghost, ghost_direction, angle)
+        ghost_direction = round(2 * angle * n_directions / np.pi)
         if distance_v[1] >= 0 and distance_v[0] >= 0:
             if ghost_direction == 0:
                 ghost_direction = "E"
@@ -432,9 +403,6 @@ class RLAgent(BustersAgent):
                 ghost_direction = "SW"
             elif ghost_direction == 0:
                 ghost_direction = "W"
-
-        print(ghost_direction)
-
         return self.get_row_qtable(ghost_direction, action_closest_ghost)
 
         ########################### INSERTA TU CODIGO AQUI  ######################
@@ -549,11 +517,12 @@ class RLAgent(BustersAgent):
         pass
 
         # If eats a ghost that's good
-        reward += 200 * (state.getNumAgents() - nextState.getNumAgents())
+        if state.get_n_living_ghosts() != nextState.get_n_living_ghosts():
+            reward += 200
 
         # If win the game many points
-        if nextState.isWin():
-            reward += 1000
+        #if nextState.isWin():
+        #    reward += 1000
 
         ##########################################################################
         return reward
@@ -568,24 +537,22 @@ class RLAgent(BustersAgent):
         # self.printInfo(state)
         print("Took action: ", action)
         print("Ended in state:")
-        self.printInfo(nextState)
+        # self.printInfo(nextState)
         print("Got reward: ", reward)
         print("---------------------------------")
 
         s_row = self.computePosition(state)
-        print("STATE ROW", s_row)
         action_v = self.actions[action]
-        print(action_v, action)
         old_q_value = self.q_table[s_row][action_v]
-        lr = (1 - self.alpha)
+        unlearning = (1 - self.alpha)
 
         if nextState.isWin():
-            self.q_table[s_row][action_v] = lr * old_q_value + (self.alpha * reward)
+            self.q_table[s_row][action_v] = unlearning * old_q_value + (self.alpha * reward)
             # If a terminal state is reached
             self.writeQtable()
         else:
             q_value_next_state = self.computeValueFromQValues(nextState)
-            self.q_table[s_row][action_v] = lr * old_q_value + self.alpha * (
+            self.q_table[s_row][action_v] = unlearning * old_q_value + self.alpha * (
                     reward + self.gamma * q_value_next_state)
 
     def getPolicy(self, state):
