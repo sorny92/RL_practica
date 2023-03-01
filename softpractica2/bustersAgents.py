@@ -508,17 +508,17 @@ class RLAgent(BustersAgent):
         # que premie el comportamiento del agente.
         #
         ##########################################################################
-        reward = 0
+        reward = -1
         # Stay still is bad? Not clear if this is a good policy
-        if state.data.agentStates[0].getDirection() == Directions.STOP:
-            reward += -1
+        #if state.data.agentStates[0].getDirection() == Directions.STOP:
+        #    reward += -1
 
         # The closer to the closest ghost the better? Maybe it's good for the policy? But might get stuck in walls
         pass
 
         # If eats a ghost that's good
         if state.get_n_living_ghosts() != nextState.get_n_living_ghosts():
-            reward += 200
+            reward += 400
 
         # If win the game many points
         #if nextState.isWin():
