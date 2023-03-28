@@ -14,12 +14,40 @@
 \begin{document}
     \maketitle
 
-    \section{Breve descripci´on explicando los contenidos del documento}
-    \section{Justificaci´on del conjunto de atributos final elegido y su rango utilizado para la definici´on de los
+
+    \section{Breve descripción explicando los contenidos del documento}
+    \section{Justificación del conjunto de atributos final elegido y su rango utilizado para la definici´on de los
     estados.}
-    \section{Descripci´on de la funci´on de refuerzo final empleada.}
-    \section{Descripci´on del c´odigo desarrollado.}
-    \section{Descripci´on de los resultados (puntuaci´on obtenida por pacman en los mapas proporcionados, comentarios
+
+    En el desarrollo del proyecto he probado diferentes atributos para tener una
+    Q table pequeña pero que pudiera representar la mayor información útil posible.
+
+    En la primera iteración utilicé unicamente la dirección de los fantasmas.
+    Esta resulta útil para casi todos los mapas ya que el agente acaba siendo capaz
+    de alcanzar al fantasma menos cuando dicho fantasma se encuntra detrás de un muro.
+
+    La siguiente iteración es una mejor sobre la anterior donde en vez de usar las
+    4 direcciones en las cuales los fantasmas se encuentran se usan 8: norte, noreste,
+    este, sureste, etc.
+    Así se permite más granularidad en las observación de los fantasmas por
+    parte del agente.
+
+    En la siguiente iteración del los atributos usados para la Q table se añade
+    la acción del fantasma más cercano.
+    La hipótesis por la cual se añade este valor es porque permite al agente
+    \"predecir\" donde el fantasma se dirige y así esperar que pueda aprender a
+    adelantarse al movimiento del fanstasma.
+
+
+
+
+    \section{Descripción de la función de refuerzo final empleada.}
+
+
+    \section{Descripción del código desarrollado.}
+    \section{Descripción de los resultados (puntuación obtenida por pacman en los mapas proporcionados, comentarios
     sobre el comportamiento de pacman)}
+
+
     \section{Conclusiones.}
 \end{document}

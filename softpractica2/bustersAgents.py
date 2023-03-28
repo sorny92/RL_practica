@@ -247,22 +247,24 @@ class RLAgent(BustersAgent):
         'NW': 7,
     }
 
-    def get_row_qtable(self, closest_ghost_direction, closest_ghost_action):
-        return self.directions[closest_ghost_direction]
+    game_duration = 0
+    episode = 0
+
+    def get_row_qtable(self, closest_ghost_direction, closest_ghost_action, has_wall: int):
+        return self.actions[closest_ghost_action] * len(self.actions) + self.directions[closest_ghost_direction] + (
+                has_wall * len(self.actions) * len(self.directions))
 
     def registerInitialState(self, gameState):
         BustersAgent.registerInitialState(self, gameState)
         self.distancer = Distancer(gameState.data.layout, False)
 
-        # n_g_direction
-        #  4values
-        self.nRowsQTable = len(self.directions)
+        self.nRowsQTable = len(self.actions) * len(self.directions) * 2
         # alpha    - learning rate
         # epsilon  - exploration rate
         # gamma    - discount factor
         self.alpha = 0.2
         self.gamma = 0.8
-        self.epsilon = 0.2
+        self.epsilon = 0.6
         ##########################################################################
         self.nColumnsQTable = 5
 
@@ -275,7 +277,7 @@ class RLAgent(BustersAgent):
         food = 0
         for width in gameState.data.food:
             for height in width:
-                if (height == True):
+                if height:
                     food = food + 1
         return food
 
@@ -346,85 +348,80 @@ class RLAgent(BustersAgent):
                     f.write(str(item) + " ")
                 f.write("\n")
 
+    def get_closest_ghost(self, gameState):
+        closest_ghost_idx = 0
+        lowest = 1000
+        for idx, g in enumerate(gameState.data.ghostDistances):
+            if g is None or g > lowest:
+                continue
+            else:
+                lowest = g
+                closest_ghost_idx = idx
+        return closest_ghost_idx
+
     def computePosition(self, state):
         """
         Compute the row of the qtable for a given state.
         """
-        gameState = state
-        pacman_position = gameState.getPacmanPosition()
+        pacman_position = state.getPacmanPosition()
 
-        def get_closest_ghost():
-            closest_ghost_idx = 0
-            lowest = 1000
-            for idx, g in enumerate(gameState.data.ghostDistances):
-                if g is None or g > lowest:
-                    continue
-                else:
-                    lowest = g
-                    closest_ghost_idx = idx
-            return closest_ghost_idx
-
-        closest_ghost_idx = get_closest_ghost()
-        position_closest_ghost = gameState.getGhostPositions()[closest_ghost_idx]
-        if not len(gameState.getGhostDirections()):
+        closest_ghost_idx = self.get_closest_ghost(state)
+        position_closest_ghost = state.getGhostPositions()[closest_ghost_idx]
+        if not len(state.getGhostDirections()):
             action_closest_ghost = "Stop"
         else:
-            action_closest_ghost = gameState.getGhostDirections()[closest_ghost_idx]
+            action_closest_ghost = state.getGhostDirections()[closest_ghost_idx]
         distance_v = (
             position_closest_ghost[0] - pacman_position[0] + 0.0001, position_closest_ghost[1] - pacman_position[1])
         angle = np.arctan(distance_v[1] / distance_v[0])
         n_directions = 2
         ghost_direction = round(2 * angle * n_directions / np.pi)
+        wall_check = None
         if distance_v[1] >= 0 and distance_v[0] >= 0:
             if ghost_direction == 0:
                 ghost_direction = "E"
+                wall_check = [1, 0]
             elif ghost_direction == 1:
                 ghost_direction = "NE"
+                wall_check = [1, 1]
             elif ghost_direction == 2:
                 ghost_direction = "N"
-        if distance_v[1] >= 0 and distance_v[0] < 0:
+                wall_check = [0, 1]
+        if distance_v[1] >= 0 > distance_v[0]:
             if ghost_direction == 2 or ghost_direction == -2:
                 ghost_direction = "N"
+                wall_check = [0, 1]
             elif ghost_direction == -1:
                 ghost_direction = "NW"
+                wall_check = [-1, 1]
             elif ghost_direction == 0:
                 ghost_direction = "W"
-        if distance_v[1] < 0 and distance_v[0] >= 0:
+                wall_check = [-1, 0]
+        if distance_v[1] < 0 <= distance_v[0]:
             if ghost_direction == 0:
                 ghost_direction = "E"
+                wall_check = [1, 0]
             elif ghost_direction == -1:
                 ghost_direction = "SE"
+                wall_check = [1, -1]
             elif ghost_direction == -2:
                 ghost_direction = "S"
+                wall_check = [0, -1]
         if distance_v[1] < 0 and distance_v[0] < 0:
             if ghost_direction == 2 or ghost_direction == -2:
                 ghost_direction = "S"
+                wall_check = [0, -1]
             elif ghost_direction == 1:
                 ghost_direction = "SW"
+                wall_check = [-1, -1]
             elif ghost_direction == 0:
                 ghost_direction = "W"
-        return self.get_row_qtable(ghost_direction, action_closest_ghost)
+                wall_check = [-1, 0]
 
-        ########################### INSERTA TU CODIGO AQUI  ######################
-        #
-        # INSTRUCCIONES:
-        #
-        # Dado un estado state hay que determinar que fila de nuestra tabla Q le corresponde. Siguiendo
-        # con el ejemplo anterior, podriamos hacer que:
-        #
-        # nearest_ghost_up, no_wall     -> Fila 0
-        # nearest_ghost_down, no_wall   -> Fila 1
-        # nearest_ghost_right, no_wall  -> Fila 2
-        # nearest_ghost_left, no_wall   -> Fila 3
-        # nearest_ghost_up, wall        -> Fila 4
-        # nearest_ghost_down, wall      -> Fila 5
-        # nearest_ghost_right, wall     -> Fila 6
-        # nearest_ghost_left, wall      -> Fila 7
-        #
-        # Como antes, este es solo un ejemplo, y la transformacion dependera del tipo de representacion
-        # para los estados hayamos utilizado
-        #
-        ##########################################################################
+        has_wall = state.hasWall(pacman_position[0] + wall_check[0],
+                                 pacman_position[1] + wall_check[1])
+        print(has_wall, ghost_direction, action_closest_ghost)
+        return self.get_row_qtable(ghost_direction, action_closest_ghost, has_wall)
 
     def getQValue(self, state, action):
         """
@@ -509,23 +506,25 @@ class RLAgent(BustersAgent):
         #
         ##########################################################################
         reward = -1
-        # Stay still is bad? Not clear if this is a good policy
-        #if state.data.agentStates[0].getDirection() == Directions.STOP:
-        #    reward += -1
 
         # The closer to the closest ghost the better? Maybe it's good for the policy? But might get stuck in walls
-        pass
+        # closest_ghost_idx = self.get_closest_ghost(state)
+        # reward += max(10 - state.data.ghostDistances[closest_ghost_idx], 0)
 
         # If eats a ghost that's good
         if state.get_n_living_ghosts() != nextState.get_n_living_ghosts():
             reward += 400
 
         # If win the game many points
-        #if nextState.isWin():
+        # if nextState.isWin():
         #    reward += 1000
 
         ##########################################################################
         return reward
+
+    def log_score(self, filename, episode, game_score, game_duration):
+        with open(filename, 'a') as f:
+            f.write(f"{episode},{game_score},{game_duration}\n")
 
     def update(self, state, action, nextState, reward):
         """
@@ -540,6 +539,7 @@ class RLAgent(BustersAgent):
         # self.printInfo(nextState)
         print("Got reward: ", reward)
         print("---------------------------------")
+        self.game_duration += 1
 
         s_row = self.computePosition(state)
         action_v = self.actions[action]
@@ -550,6 +550,9 @@ class RLAgent(BustersAgent):
             self.q_table[s_row][action_v] = unlearning * old_q_value + (self.alpha * reward)
             # If a terminal state is reached
             self.writeQtable()
+            self.episode += 1
+            self.log_score("lab1_wallawareness.txt", self.episode, nextState.getScore(), self.game_duration)
+            self.game_duration = 0
         else:
             q_value_next_state = self.computeValueFromQValues(nextState)
             self.q_table[s_row][action_v] = unlearning * old_q_value + self.alpha * (
