@@ -1,0 +1,22 @@
+reward_total:
+
+        reward = -1
+        
+        # The closer to the closest ghost the better? Maybe it's good for the policy? But might get stuck in walls
+        closest_ghost_idx = self.get_closest_ghost(state)
+        reward += max(10 - state.data.ghostDistances[closest_ghost_idx], 0)
+
+        # If eats a ghost that's good
+        if state.get_n_living_ghosts() != nextState.get_n_living_ghosts():
+            reward += 400
+
+
+reward_simple:
+
+        reward = -1
+
+        # If eats a ghost that's good
+        if state.get_n_living_ghosts() != nextState.get_n_living_ghosts():
+            reward += 400
+
+wallawareness same as reward_simple but with wall awareness code
