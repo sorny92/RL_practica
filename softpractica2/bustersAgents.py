@@ -492,19 +492,6 @@ class RLAgent(BustersAgent):
         """
           Return a reward value based on the information of state and nextState
         """
-        ########################### INSERTA TU CODIGO AQUI  ######################
-        #
-        # INSTRUCCIONES:
-        #
-        # Ahora mismo el refuerzo que se asigna es siempre 0, pero la idea es utilizar este refuerzo
-        # para premiar o castigar a nuestro agente segun se vaya comportando. Por ejemplo, comerse a un
-        # fantasma es algo positivo que debemos premiar. Es decir, si pasamos de un estado state con 5
-        # fantasmas a un nextState con 4, esto es positivo porque significa que nos hemos comido un
-        # fantasma. Tambien es algo positivo si nextState.isWin() es True porque significa que nos hemos
-        # comido todos los fantasmas. Teniendo en cuenta todo esto, disenya tu propia funcion de refuerzo
-        # que premie el comportamiento del agente.
-        #
-        ##########################################################################
         reward = -1
 
         # The closer to the closest ghost the better? Maybe it's good for the policy? But might get stuck in walls
@@ -518,11 +505,9 @@ class RLAgent(BustersAgent):
         # If win the game many points
         # if nextState.isWin():
         #    reward += 1000
-
-        ##########################################################################
         return reward
 
-    def log_score(self, filename, episode, game_score, game_duration):
+    def logging_score(self, filename, episode, game_score, game_duration):
         with open(filename, 'a') as f:
             f.write(f"{episode},{game_score},{game_duration}\n")
 
@@ -551,7 +536,7 @@ class RLAgent(BustersAgent):
             # If a terminal state is reached
             self.writeQtable()
             self.episode += 1
-            self.log_score("lab1_wallawareness.txt", self.episode, nextState.getScore(), self.game_duration)
+            self.logging_score("lab1_wallawareness.txt", self.episode, nextState.getScore(), self.game_duration)
             self.game_duration = 0
         else:
             q_value_next_state = self.computeValueFromQValues(nextState)

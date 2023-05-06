@@ -14,40 +14,131 @@
 \begin{document}
     \maketitle
 
-
-    \section{Breve descripción explicando los contenidos del documento}
-    \section{Justificación del conjunto de atributos final elegido y su rango utilizado para la definici´on de los
+    \section{Justificación del conjunto de atributos final elegido y su rango utilizado para la definición de los
     estados.}
 
     En el desarrollo del proyecto he probado diferentes atributos para tener una
     Q table pequeña pero que pudiera representar la mayor información útil posible.
+    \newline
 
     En la primera iteración utilicé unicamente la dirección de los fantasmas.
     Esta resulta útil para casi todos los mapas ya que el agente acaba siendo capaz
     de alcanzar al fantasma menos cuando dicho fantasma se encuntra detrás de un muro.
+    \newline
 
     La siguiente iteración es una mejor sobre la anterior donde en vez de usar las
     4 direcciones en las cuales los fantasmas se encuentran se usan 8: norte, noreste,
     este, sureste, etc.
     Así se permite más granularidad en las observación de los fantasmas por
     parte del agente.
+    De esta manera se puede poner una preferencia entre ir norte-sur, este-oeste cuando el
+    fantasma está en una posición diagonal con respecto al agante.
+    \newline
 
-    En la siguiente iteración del los atributos usados para la Q table se añade
-    la acción del fantasma más cercano.
-    La hipótesis por la cual se añade este valor es porque permite al agente
-    \"predecir\" donde el fantasma se dirige y así esperar que pueda aprender a
-    adelantarse al movimiento del fanstasma.
+    En la siguiente iteración del los atributos usados para la Q table se añade la acción del fantasma más cercano.
+    La hipótesis por la cual se añade este valor es porque tal vez permite al agente predecir donde el fantasma se
+    dirige y así esperar que pueda aprender a adelantarse al movimiento del fanstasma.
+    Esta última hace que el tiempo para la convergecia a una solución aceptable cueste más.
+    Esto es debido a que la Q table tiene muchas más filas y se necesitan más iteraciones para
+    actualizarlas ya que no siempre se samplean todas las acciones de los agentes.
+    \newline
 
-
+    En la última iteración se añade otra variable que es si hay muro entre los agentes.
+    La hipótesis de dicha adición es que el agente aprenderá a evitar las paredes.
+    Esta variable es especialmente importante para el lab3 ya que para alcanzar uno de los fantasmas
+    es necesario entrar en un pasillo.
 
 
     \section{Descripción de la función de refuerzo final empleada.}
+    La función de refuerzo se puede partir en 2 partes.
+    La primera es un refuerzo negativo por iteración.
+    Esto es para fomentar la rapidez del agente y evitar que se quede quieto.
+    \newline
+
+    La segunda parte es reforzar positivamente que el agente coma fantasmas.
+    Este refuerzo positivo es el que hace que el agente se mueva en dirección de los fantasmas.
+    \newline
+
+    Se exploran dos opciones más:
+
+    Una de ella es dar un refuerzo positivo cuando el juego termine, es decir
+    cuando no queden fantasmas.
+    Después de experimentar se comprueba que realmente no es útil ya que con el refuerzo anterior se consigue
+    este objetivo directamente y hace el entrenamiento inestable ya que se sobrerefuerza la última acción del agente.
+
+    La segunda es dar un refuerzo cuanto más cerca se está del fantasma.
+    Este refuerzo funciona muy bien en mapas abiertos ya que ayuda a dirigir el movimiento del agente a los
+    fantasmas.
+    Es especialmente útil en las primeras iteraciones ya que la tabla se actualiza en cada iteración
+    ayudando a converger a acciones útiles rápidamente.
+    El problema de este refuerzo es que el agente se queda enganchado cuando hay un muro entre el fantasmas y agente
+    ya que el refuerzo por estar cerca a lo largo del tiempo es mucho más alto que el refuerzo conseguido por
+    comérselo.
+    Esto también resulta problematico si se entrena el agente por un largo tiempo ya que acaba aprendiendo
+    que la mejor estrategia es mantenerse cerca de los fantasmas sin comerselos.
 
 
     \section{Descripción del código desarrollado.}
+    En el método ``registerInitialState'' se modifican los valores de alpha, gamma y epsilon para
+    representar los valores usados para los entrenamientos.
+
+    Se añade un método ``get\_closest\_ghost'' que devuelve el índice del fantasma más cercano.
+    Este método se utilizará para saber en que dirección se encuentra el fantasma más cercano.
+
+    Se modifica ``computePosition'' para que devuelva la fila de la Q table basado en la acción, la dirección y si hay
+    muro con el fantasma más cercano.
+    En este método se observa que uso el ángulo entre el fantasma y el agente para separar la dirección
+    en 8 cuadrantes.
+
+    Se modifica el método ``getReward'' para implementar la función de recompensa anteriormente indicada.
+
+    Se añade un método ``logging\_score'' que se usa para registrar en un fichero el avance del fantasma durante el
+    entrenamiento.
+    Se pueden ver algunos de los runs en lab1\_reward\_simple.txt, lab1\_wallawareness.txt.
+
+    Por último se modifica el método ``update'' para hacer un log cuando se termina la partida y en caso de que no
+    sea así actualizar la Q table.
+
     \section{Descripción de los resultados (puntuación obtenida por pacman en los mapas proporcionados, comentarios
     sobre el comportamiento de pacman)}
+    En la versión final donde la función de refuerzo penaliza -1 en cada iteración y recompensa con 400 puntos el
+    comer un fantasma; con estados posibles dependiendo de 8 posibles posiciones del fantasma más cercano, comprobaci
+    ón si hay un muro entre el agente y el fantasma y además las acciones posibles de los fantasmas.
+    Se se obtienen los siguientes resultados en cada lab:
+
+    En el primer lab entrenando de 0 con alpah=0.2, gamma=0.8 y epsilon=0.6 el agente consigue 186 puntos en 3
+    iteraciones.
+    A partir de aquí las siguientes ejecuciones suelen resolver el mapa en 11 a 20 iteraciones.
+
+    Con la Qtable anterior y los mismo hiperparámetros se deja el agente en el lab2.
+    Este tras una iteración pasa de 127 iteraciones para resolverlo a 10.
+    En las siguientes ejecuciones lo revuelve en 10 a 30 iteraciones consiguiendo una puntuación máxima de 390 puntos.
+
+    En este punto el agente ha podido actualizar valores de la Qtable para todas las direcciones pero
+    solo para la acción STOP de los fantasmas.
+    Aquí se hace otra ejecución sobre el lab1 pero con fantasmas que se mueven huyendo del agente.
+    Esto permite que el agente pueda actualizar los valores para el resto de acciones de los fantasmas.
+    Después de unas 13 ejecuciones el agente consigue 156 puntos en el lab1 y 380 en el lab2.
+
+    En el lab3 es capaz de conseguir 564 puntos en unas 36 iteraciones pero hay mucha variabilidad
+    entre las diferentes ejecuciones en el número de iteraciones que hacen falta para terminar el juego.
+
+    En el caso del lab3 cuando los fantasmas se mueven resulta más sencillo para el agente ya que este
+    sale del pasillo y por tanto es más fácil de comer.
+    El lab3 cuando no se mueven cuesta bastante para el agente ya que hace falta un valor de epsilon
+    relativamente alto para que consiga evitar el muro y no siempre lo consigue.
+
+    En los demás mapas el agente sigue posiblemente el camino más óptimo para comer a los fantasmas
+    gracias la función de refuerzo negativa por estar quieto y a la mejor granularidad de los estados.
 
 
     \section{Conclusiones.}
+    Con los hiperparámetros usados todos los labs pueden ser resueltos pero especialmente el lab3 tarda mucho ya que
+    la función de refuerzo o los estados implementados no son los mejores para que el agente puedar llegar al
+    fantasma que se encuentra en el pasillo.
+
+    El agente con el diseño actual es capaz de seguir a los fantasmas en los otros mapas en lo que se podría
+    considerar un camino posiblemente óptimo.
+    Además al tener información de la acción actual de los fantasmas es capaz de moverse a donde los fantasmas
+    se encontrarán y no donde se encuentran.
 \end{document}
